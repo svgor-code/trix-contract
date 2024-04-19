@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-contract Donats {
+contract Trix {
     address owner;
-    mapping(address => uint) public wallets;
+    uint256 internal constant MAX_FEE = 1; // 1%
 
     constructor() {
         owner = msg.sender;
@@ -18,8 +18,6 @@ contract Donats {
         string message
     );
 
-    event Withdraw(address wallet, uint256 amount, uint256 timestamp);
-
     function sendDonation(
         address _to,
         string memory _username,
@@ -28,8 +26,11 @@ contract Donats {
         require(_to != address(0), "Unexpected zero address");
         require(msg.value > 0, "Donation can't be equal zero");
 
-        wallets[_to] += (msg.value - (100 / msg.value));
-        wallets[owner] += 100 / msg.value;
+        uint256 fee = (msg.value * MAX_FEE) / 100;
+        uint256 amount = msg.value - fee;
+
+        payable(owner).transfer(fee);
+        payable(_to).transfer(amount);
 
         emit Donat(
             msg.sender,
@@ -40,15 +41,4 @@ contract Donats {
             _message
         );
     }
-
-    function withdraw(uint256 _amount) external {
-        require(msg.sender != address(0), "Unexpected zero address");
-        require(_amount > 0, "Requested withdrawal amount is too small");
-        require(wallets[msg.sender] >= _amount, "Insufficient funds");
-
-        wallets[msg.sender] -= _amount;
-        payable(msg.sender).transfer(_amount);
-
-        emit Withdraw(msg.sender, _amount, block.timestamp);
-    } 
 }
