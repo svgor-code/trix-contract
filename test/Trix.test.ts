@@ -1,21 +1,27 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Trix } from "../typechain-types";
+import { Bitcoin } from "../typechain-types/contracts/Token.sol";
+import {} from "ethers/lib/utils";
+
+const { ethers } = hre;
 
 describe("Trix", () => {
   let owner: SignerWithAddress;
   let streamer: SignerWithAddress;
   let donater1: SignerWithAddress;
 
+  let token: Bitcoin;
   let contract: Trix;
 
   beforeEach(async () => {
     [owner, streamer, donater1] = await ethers.getSigners();
-    const contractFactory = await ethers.getContractFactory("Trix", owner);
-
-    contract = await contractFactory.deploy();
-    await contract.deployed();
+    token = (await ethers.deployContract(
+      "Bitcoin",
+      owner
+    )) as unknown as Bitcoin;
+    contract = (await ethers.deployContract("Trix", owner)) as unknown as Trix;
   });
 
   it("donater can send donat to streamer", async () => {
@@ -23,9 +29,15 @@ describe("Trix", () => {
 
     const tx = await contract
       .connect(donater1)
-      .sendDonation(streamer.address, "Username", "Test message", {
-        value: donatAmount,
-      });
+      .sendDonation(
+        streamer.address,
+        "Username",
+        "Test message",
+        ethers.constants.AddressZero,
+        {
+          value: donatAmount,
+        }
+      );
 
     await expect(tx).to.emit(contract, "Donat");
 
@@ -34,6 +46,6 @@ describe("Trix", () => {
 
     await expect(tx).to.changeEtherBalance(streamer, amount);
     await expect(tx).to.changeEtherBalance(owner, fee);
-    await expect(tx).to.changeEtherBalance(donater1, -donatAmount);  
+    await expect(tx).to.changeEtherBalance(donater1, -donatAmount);
   });
 });
