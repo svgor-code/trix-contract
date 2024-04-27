@@ -1,11 +1,11 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./IERC20.sol";
 
 contract Trix {
     address owner;
-    uint256 internal constant MAX_FEE = 1; // 1%
+    uint8 public MAX_FEE = 3; // 3%
 
     constructor() {
         owner = msg.sender;
@@ -26,6 +26,15 @@ contract Trix {
         _;
     }
 
+    modifier  onlyOwner() {
+        require(msg.sender == owner, "only owners");
+        _;
+    }
+
+    function changeFee(uint8 _newFee) external onlyOwner {
+        MAX_FEE = _newFee;
+    }
+
     function sendDonation(
         address _to,
         string memory _username,
@@ -34,8 +43,11 @@ contract Trix {
         uint256 fee = (msg.value * MAX_FEE) / 100;
         uint256 amount = msg.value - fee;
 
-        payable(owner).transfer(fee);
-        payable(_to).transfer(amount);
+        (bool sentFee,) = payable(owner).call{value: fee}("");
+        require(sentFee, "Failed to send Ether");
+
+        (bool sentDonat,) = payable(_to).call{value: amount}("");
+        require(sentDonat, "Failed to send Ether");
 
         emit Donat(
             msg.sender,
@@ -73,4 +85,6 @@ contract Trix {
             _token
         );
     }
+
+    receive() external payable { }
 }
