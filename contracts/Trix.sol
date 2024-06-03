@@ -26,7 +26,7 @@ contract Trix {
         _;
     }
 
-    modifier  onlyOwner() {
+    modifier onlyOwner() {
         require(msg.sender == owner, "only owners");
         _;
     }
@@ -37,8 +37,8 @@ contract Trix {
 
     function sendDonation(
         address _to,
-        string memory _username,
-        string memory _message
+        string calldata _username,
+        string calldata _message
     ) external payable notZeroDonation {
         uint256 fee = (msg.value * MAX_FEE) / 100;
         uint256 amount = msg.value - fee;
@@ -62,14 +62,15 @@ contract Trix {
 
     function sendTokenDonation(
         address _to,
-        string memory _username,
-        string memory _message,
-        address _token
+        string calldata _username,
+        string calldata _message,
+        address _token,
+        uint256 value
     ) external payable notZeroDonation {
         IERC20 token = IERC20(_token);
 
-        uint256 fee = (msg.value * MAX_FEE) / 100;
-        uint256 amount = msg.value - fee;
+        uint256 fee = (value * MAX_FEE) / 100;
+        uint256 amount = value - fee;
 
 
         token.transferFrom(msg.sender, owner, fee);
@@ -85,6 +86,4 @@ contract Trix {
             _token
         );
     }
-
-    receive() external payable { }
 }
