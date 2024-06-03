@@ -66,7 +66,7 @@ contract Trix {
         string calldata _message,
         address _token,
         uint256 value
-    ) external payable notZeroDonation {
+    ) external payable {
         IERC20 token = IERC20(_token);
 
         uint256 fee = (value * MAX_FEE) / 100;
