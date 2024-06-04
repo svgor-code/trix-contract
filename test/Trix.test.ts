@@ -61,9 +61,7 @@ describe("Trix", () => {
         "username",
         "message",
         token.address,
-        {
-          value: donatAmount,
-        }
+        donatAmount
       );
 
     await expect(tx).to.emit(contract, "Donat");
@@ -88,16 +86,20 @@ describe("Trix", () => {
   it("donater can't donat zero funds in ERC20 token", async () => {
     const tx = contract
       .connect(donater1)
-      .sendTokenDonation(streamer.address, "username", "message", token.address, {
-        value: 0,
-      });
+      .sendTokenDonation(
+        streamer.address,
+        "username",
+        "message",
+        token.address,
+        0
+      );
 
     await expect(tx).to.be.revertedWith("Donation can't be equal zero");
   });
 });
 
 const calcFeeAndAmount = (donatAmount: number) => {
-  const fee = donatAmount * 0.01;
+  const fee = donatAmount * 0.03;
   const amount = donatAmount - fee;
 
   return {
