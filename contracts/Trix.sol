@@ -87,7 +87,7 @@ contract Trix is ReentrancyGuard {
         emit Donat(
             msg.sender,
             _to,
-            msg.value,
+            value,
             block.timestamp,
             _username,
             _message,
