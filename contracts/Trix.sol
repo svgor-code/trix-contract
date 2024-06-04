@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
 import "./IERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Trix {
+contract Trix is ReentrancyGuard {
     address owner;
     uint8 public MAX_FEE = 3; // 3%
 
@@ -21,8 +22,8 @@ contract Trix {
         address indexed token
     );
 
-    modifier notZeroDonation() {
-        require(msg.value > 0, "Donation can't be equal zero");
+    modifier notZeroDonation(uint256 value) {
+        require(value > 0, "Donation can't be equal zero");
         _;
     }
 
@@ -32,6 +33,8 @@ contract Trix {
     }
 
     function changeFee(uint8 _newFee) external onlyOwner {
+        require(_newFee <= 10, "Fee cannot exceed 10%");
+
         MAX_FEE = _newFee;
     }
 
@@ -39,15 +42,15 @@ contract Trix {
         address _to,
         string calldata _username,
         string calldata _message
-    ) external payable notZeroDonation {
+    ) external payable notZeroDonation(msg.value) nonReentrant {
         uint256 fee = (msg.value * MAX_FEE) / 100;
         uint256 amount = msg.value - fee;
 
-        (bool sentFee,) = payable(owner).call{value: fee}("");
-        require(sentFee, "Failed to send Ether");
+        (bool sentFee, ) = payable(owner).call{value: fee}("");
+        require(sentFee, "Failed to transfer fee");
 
-        (bool sentDonat,) = payable(_to).call{value: amount}("");
-        require(sentDonat, "Failed to send Ether");
+        (bool sentDonat, ) = payable(_to).call{value: amount}("");
+        require(sentDonat, "Failed to transfer donation");
 
         emit Donat(
             msg.sender,
@@ -66,15 +69,20 @@ contract Trix {
         string calldata _message,
         address _token,
         uint256 value
-    ) external payable {
+    ) external payable notZeroDonation(value) nonReentrant {
         IERC20 token = IERC20(_token);
 
         uint256 fee = (value * MAX_FEE) / 100;
         uint256 amount = value - fee;
 
-
-        token.transferFrom(msg.sender, owner, fee);
-        token.transferFrom(msg.sender, _to, amount);
+        require(
+            token.transferFrom(msg.sender, owner, fee),
+            "Failed to transfer fee"
+        );
+        require(
+            token.transferFrom(msg.sender, _to, amount),
+            "Failed to transfer donation"
+        );
 
         emit Donat(
             msg.sender,
